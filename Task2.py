@@ -27,16 +27,18 @@ if format is "1":
     ws['D1'] = "Resolution"
     ws['E1'] = "V-codec"
     ws['F1'] = "A-codec"
+    ws['G1'] = "A-codec 2"
+    ws['H1'] = "Subtitle"
+    ws['I1'] = "Subtitle 2"
 else:
     json_f = open("m9.json", "w")
     json_f.close()
 
 
 
-
-i = 151
-#check = 0
-while i != 152:
+n = 2
+i = 0
+while i < 255:
     i += 1
 
 
@@ -46,64 +48,48 @@ while i != 152:
 
     
     output = (subprocess.run(["docker", "run", "-it", "--rm", "--network", "host", "nfs01.techstudio.tv/ffprobe:latest", "-v", "quiet", "-print_format", "json", "-show_format", "-show_streams", "-i", mCast], stdout=subprocess.PIPE))
-    output = str(output).replace("\\r\\n", "")  
-    output = output.replace(" ", "")
-    #print(output)
-    if i < 10:
-        output = output[253:-2]
-    if i >=10 and i <100:
-        output = output[254:-2]
-    if i >=100:
-        output = output[255:-2]
-    print(output)
-    data = json.loads(output)
+
+
+    data = json.loads(output.stdout.decode("utf8"))
     if not data:
         continue
-
-
+    print(data)
     if format is "1":
-        ws['A' + str(i + 1)] = i
-        ws['C' + str(i + 1)] = mCast
+        ws['A' + str(n)] = str(n-1)
+        ws['C' + str(n)] = mCast
+        sub_check = 0
         aud_check = 0
         for check in data["streams"]:
-
-            if check["codec_type"] not in data["streams"]:
+            if "codec_type" not in check:
                 continue
-            if aud_check != 0:
-                if re.match("audio", check["codec_type"]):
-                    ws['G' + str(i + 1)] = check["codec_name"]
-                    aud_check = 0
             elif check["codec_type"] == "video":
-                ws['E' + str(i + 1)] = check["codec_name"]
+                print(check["codec_name"])
+                ws['E' + str(n)] = check["codec_name"]
                 resolution = str(check["width"]) + "x" + str(check["height"])
             elif check["codec_type"] == "audio":
-                ws['F' + str(i + 1)] = check["codec_name"]
-                aud_check += 1
+                if aud_check != 0:
+                    print(check["codec_name"])
+                    ws['G' + str(n)] = check["codec_name"]
+                    aud_check = 0
+                else:
+                    print(check["codec_name"])
+                    ws['F' + str(n)] = check["codec_name"]
+                    aud_check += 1
             elif check["codec_type"] == "subtitle":
-                ws['H' + str(i + 1)] = check["codec_name"]
+                if sub_check != 0:                  
+                    ws['I' + str(n)] = check["codec_name"]
+                    print(check["codec_name"])
+                    sub_check = 0
+                else:
+                    ws['H' + str(n)] = check["codec_name"]
+                    print(check["codec_name"])
+                    sub_check += 1
             
-
-        #if data["streams"][check]["codec_type"] == "audio":
-        #    ws['F' + str(i + 1)] = data["streams"][check]["codec_name"]
-        #    check += 1
-
-        #    if data["streams"][check]["codec_type"] == "audio":
-        #        ws['F' + str(i + 1)] = data["streams"][check]["codec_name"]
-        #        check += 1
-        #        if data["streams"][check]["codec_type"] != "video":
-        #            ws['F' + str(i + 1)] = data["streams"][check]["codec_name"]
-        #            resolution = "--------"
-        #if data["streams"][check]["codec_type"] == "video": 
-        #    ws['E' + str(i + 1)] = data["streams"][check]["codec_name"]
-        #    if check == 0:
-        #        ws['F' + str(i + 1)] = data["streams"][check + 1]["codec_name"]
-        #    resolution = str(data["streams"][check]["width"]) + "x" + str(data["streams"][check]["height"])
-        #else:
-        #    resolution = "--------"
 
         if not resolution:
             resolution = "--------"
-        ws['D' + str(i + 1)] = resolution
+        ws['D' + str(n)] = resolution
+        n += 1
     else:
         json_f = open("m9.json", "a")
         json_f.write(json.dumps(data))
@@ -112,58 +98,61 @@ while i != 152:
 
 
     
-j = 11
-while j < 10:
-    i += 1
+j = 0
+while j < 255:
     j += 1
 
     mCast = "http://207.110.52.50:4022/udp/233.166.173." + str(j) + ":1234"
+    output = (subprocess.run(["docker", "run", "-it", "--rm", "--network", "host", "nfs01.techstudio.tv/ffprobe:latest", "-v", "quiet", "-print_format", "json", "-show_format", "-show_streams", "-i", mCast], stdout=subprocess.PIPE))
 
 
-
-    output = str(subprocess.run(["docker", "run", "-it", "--rm", "--network", "host", "nfs01.techstudio.tv/ffprobe:latest", "-v", "quiet", "-print_format", "json", "-show_format", "-show_streams", "-i", mCast], stdout=subprocess.PIPE))
-    output = str(output).replace("\\r\\n", "")  
-    output = output.replace(" ", "")
-    print(output)
-    if j < 10:
-        output = output[253:-2]
-    if j >=10 and j <100:
-        output = output[254:-2]
-    if j >=100:
-        output = output[255:-2]
-    data = json.loads(output)
-
+    data = json.loads(output.stdout.decode("utf8"))
+    if not data:
+        continue
+    print(data)
 
 
     if format is "1":
-        ws['A' + str(i + 1)] = i
-        ws['C' + str(i + 1)] = mCast
-        if not data:
-            continue
-        check = 0
-        if data["streams"][check]["codec_type"] == "audio":
-            ws['F' + str(i + 1)] = data["streams"][check]["codec_name"]
-            check += 1
+        ws['A' + str(n)] = str(n-1)
+        ws['C' + str(n)] = mCast
+        sub_check = 0
+        aud_check = 0
+        for check in data["streams"]:
+            if "codec_type" not in check:
+                continue
+            elif check["codec_type"] == "video":
+                print(check["codec_name"])
+                ws['E' + str(n)] = check["codec_name"]
+                resolution = str(check["width"]) + "x" + str(check["height"])
+            elif check["codec_type"] == "audio":
+                if aud_check != 0:
+                    print(check["codec_name"])
+                    ws['G' + str(n)] = check["codec_name"]
+                    aud_check = 0
+                else:
+                    print(check["codec_name"])
+                    ws['F' + str(n)] = check["codec_name"]
+                    aud_check += 1
+            elif check["codec_type"] == "subtitle":
+                if sub_check != 0:                  
+                    ws['I' + str(n)] = check["codec_name"]
+                    print(check["codec_name"])
+                    sub_check = 0
+                else:
+                    ws['H' + str(n)] = check["codec_name"]
+                    print(check["codec_name"])
+                    sub_check += 1
+            
 
-            if data["streams"][check]["codec_type"] == "audio":
-                ws['F' + str(i + 1)] = data["streams"][check]["codec_name"]
-                check += 1
-                if data["streams"][check]["codec_type"] != "video":
-                    ws['F' + str(i + 1)] = data["streams"][check]["codec_name"]
-                    resolution = "--------"
-        if data["streams"][check]["codec_type"] == "video": 
-            ws['E' + str(i + 1)] = data["streams"][check]["codec_name"]
-            if check == 0:
-                ws['F' + str(i + 1)] = data["streams"][check + 1]["codec_name"]
-            resolution = str(data["streams"][check]["width"]) + "x" + str(data["streams"][check]["height"])
-        else:
+        if not resolution:
             resolution = "--------"
-
-        ws['D' + str(i + 1)] = resolution
+        ws['D' + str(n)] = resolution
+        n += 1
     else:
         json_f = open("m9.json", "a")
         json_f.write(json.dumps(data))
         json_f.close
+
 
 
 if format is "1":
